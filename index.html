@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor NFS-e → EDI (DOCCOB & CONEMB)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .code-font { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col justify-between text-gray-800">
+
+    <!-- HEADER / STEPPER -->
+    <header class="bg-[#0f2c59] text-white px-6 py-4 shadow-md">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/10 p-2.5 rounded-xl">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">Conversor NFS-e → EDI</h1>
+                    <p class="text-xs text-gray-300">Caucaia / SEFIN · DOCCOB & CONEMB</p>
+                </div>
+            </div>
+
+            <!-- Steps Progress INDICATOR -->
+            <div class="flex items-center gap-4 text-xs font-medium">
+                <!-- Step 1 Indicator -->
+                <div id="step-indicator-1" class="flex items-center gap-2 text-white">
+                    <span id="step-num-1" class="w-6 h-6 rounded-full bg-white text-[#0f2c59] flex items-center justify-center font-bold">1</span>
+                    <span>Upload PDF</span>
+                </div>
+                <span class="text-gray-400">&gt;</span>
+                <!-- Step 2 Indicator -->
+                <div id="step-indicator-2" class="flex items-center gap-2 text-gray-400">
+                    <span id="step-num-2" class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center font-bold">2</span>
+                    <span>Revisar Dados</span>
+                </div>
+                <span class="text-gray-400">&gt;</span>
+                <!-- Step 3 Indicator -->
+                <div id="step-indicator-3" class="flex items-center gap-2 text-gray-400">
+                    <span id="step-num-3" class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center font-bold">3</span>
+                    <span>Baixar EDI</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="max-w-6xl w-full mx-auto p-4 flex-grow my-6">
+        
+        <!-- STEP 1: UPLOAD AREA -->
+        <div id="step-1" class="bg-white border border-gray-200 shadow-sm rounded-2xl p-8 max-w-4xl mx-auto">
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Carregar NFS-e</h2>
+            <p class="text-sm text-gray-500 mb-6">Selecione o PDF da Nota Fiscal de Serviço Eletrônica emitida pelo sistema SEFIN de Caucaia/CE.</p>
+            
+            <div onclick="simulateUpload()" class="border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-xl p-12 text-center cursor-pointer bg-gray-50/50 hover:bg-blue-50/20 transition-all group">
+                <div class="bg-blue-50 group-hover:bg-blue-100 p-4 rounded-full w-14 h-14 mx-auto flex items-center justify-center mb-4 transition-colors">
+                    <svg class="w-6 h-6 text-[#0f2c59]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                </div>
+                <p class="text-sm font-medium text-gray-700">Arraste o PDF aqui ou <span class="text-blue-600 underline">clique para selecionar</span></p>
+                <p class="text-xs text-gray-400 mt-1">NFS-e Prefeitura de Caucaia / SEFIN</p>
+            </div>
+
+            <div class="text-center mt-6">
+                <button onclick="goToStep2(false)" class="text-xs text-gray-500 hover:text-blue-600 underline font-medium cursor-pointer">
+                    Preencher dados manualmente
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 2: FORM REVIEW -->
+        <div id="step-2" class="hidden max-w-4xl mx-auto space-y-4">
+            <!-- Alert Document Uploaded -->
+            <div id="file-alert" class="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="bg-green-100 text-green-700 p-2 rounded-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <div>
+                        <p id="uploaded-filename" class="text-sm font-semibold text-gray-800">1521.pdf</p>
+                        <p class="text-xs text-green-600 font-medium">PDF carregado com sucesso</p>
+                    </div>
+                </div>
+                <button onclick="resetApp()" class="text-gray-400 hover:text-gray-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+
+            <!-- Form Card -->
+            <form id="edi-form" onsubmit="generateEDI(event)" class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">Revisar Dados Extraídos</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Verifique e corrija os campos antes de gerar os arquivos EDI. Campos marcados com <span class="text-red-500">*</span> são obrigatórios.</p>
+                </div>
+
+                <!-- IDENTIFICAÇÃO DA NOTA -->
+                <div>
+                    <div class="relative flex py-2 items-center">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink mx-4 text-[10px] font-bold tracking-wider text-blue-900 uppercase">Identificação da Nota</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Número da Nota *</label>
+                            <input type="text" id="numNota" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Código de Verificação</label>
+                            <input type="text" id="codVerificacao" placeholder="Ex: 23076502" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DATAS -->
+                <div>
+                    <div class="relative flex py-2 items-center">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink mx-4 text-[10px] font-bold tracking-wider text-blue-900 uppercase">Datas</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Data de Emissão *</label>
+                            <input type="text" id="dataEmissao" required placeholder="DD/MM/AAAA" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Formato: 07/05/2026</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Data de Vencimento *</label>
+                            <input type="text" id="dataVencimento" required placeholder="DD/MM/AAAA" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Formato: 22/05/2026</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VALORES FINANCEIROS -->
+                <div>
+                    <div class="relative flex py-2 items-center">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink mx-4 text-[10px] font-bold tracking-wider text-blue-900 uppercase">Valores Financeiros</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 row-gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Valor Total dos Serviços *</label>
+                            <input type="text" id="valorServicos" required placeholder="816,33" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Ex: 1.224,49</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Valor Líquido</label>
+                            <input type="text" id="valorLiquido" placeholder="800,00" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Após deduções</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">ISS Retido na Fonte *</label>
+                            <input type="text" id="issRetido" required placeholder="2,00" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Valor em R$</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Alíquota ISS (%)</label>
+                            <input type="text" id="aliquotaIss" placeholder="2,00" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Percentual (ex: 2,00)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PRESTADOR E TOMADOR -->
+                <div>
+                    <div class="relative flex py-2 items-center">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink mx-4 text-[10px] font-bold tracking-wider text-blue-900 uppercase">Prestador e Tomador</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">CNPJ Prestador *</label>
+                            <input type="text" id="cnpjPrestador" required placeholder="00.000.000/0000-00" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">CNPJ Tomador *</label>
+                            <input type="text" id="cnpjTomador" required placeholder="00.000.000/0000-00" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Nome do Prestador</label>
+                            <input type="text" id="nomePrestador" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Nome do Tomador</label>
+                            <input type="text" id="nomeTomador" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DADOS LOGÍSTICOS -->
+                <div>
+                    <div class="relative flex py-2 items-center">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink mx-4 text-[10px] font-bold tracking-wider text-blue-900 uppercase">Dados Logísticos</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Município do Prestador</label>
+                            <input type="text" id="municipioPrestador" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Usado no CONEMB (reg. 322)</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Município do Tomador</label>
+                            <input type="text" id="municipioTomador" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Usado no DOCCOB (reg. 352/353)</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Número da Remessa *</label>
+                            <input type="text" id="numRemessa" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Da discriminação de serviços</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Motorista</label>
+                            <input type="text" id="motorista" placeholder="Nome do motorista (opcional)" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-4 border-t border-gray-100 flex justify-end">
+                    <button type="submit" class="bg-[#0f2c59] text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow hover:bg-blue-900 transition-colors cursor-pointer">
+                        Gerar Arquivos EDI
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- STEP 3: DOWNLOAD EDI -->
+        <div id="step-3" class="hidden max-w-5xl mx-auto space-y-6">
+            <!-- Green Alert Box -->
+            <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+                <div class="bg-emerald-500 text-white rounded-full p-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm">Arquivos EDI gerados com sucesso!</h3>
+                    <p id="success-summary" class="text-xs text-emerald-700">NFS-e 1521 · 02/07/2026 · R$ 816,33</p>
+                </div>
+            </div>
+
+            <!-- Two Columns for DOCCOB & CONEMB -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- DOCCOB Card -->
+                <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">DOCCOB</h3>
+                                <p class="text-xs text-gray-500">Documento de Cobrança</p>
+                            </div>
+                            <span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded border border-gray-200">.txt</span>
+                        </div>
+                        
+                        <div class="text-xs space-y-1 text-gray-600 mb-4">
+                            <div class="flex justify-between border-b border-gray-100 py-1"><span>Registros</span><span class="font-medium text-gray-900">351, 352, 353, 354, 355</span></div>
+                            <div class="flex justify-between border-b border-gray-100 py-1"><span>Linhas</span><span class="font-medium text-gray-900">7 linhas × 160 chars</span></div>
+                            <div class="flex justify-between py-1"><span>Nota</span><span id="doccob-nota-val" class="font-medium text-gray-900">1521</span></div>
+                        </div>
+
+                        <!-- Mac Preview Box -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden mb-6 shadow-inner">
+                            <div class="bg-gray-100 border-b border-gray-200 px-3 py-2 flex items-center justify-between">
+                                <div class="flex gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-red-400 block"></span>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-yellow-400 block"></span>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-green-400 block"></span>
+                                </div>
+                                <span id="doccob-filename" class="text-[10px] code-font text-gray-500">COB_B & C CARG15072026151135.txt</span>
+                                <button onclick="copyToClipboard('doccob-text')" class="text-gray-500 hover:text-blue-600 text-[10px] font-medium flex items-center gap-1 cursor-pointer">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg> Copiar
+                                </button>
+                            </div>
+                            <pre id="doccob-preview" class="p-3 text-[10px] code-font text-gray-700 whitespace-pre overflow-x-auto leading-relaxed"></pre>
+                        </div>
+                    </div>
+                    <button onclick="downloadFile('doccob')" class="w-full bg-[#0f2c59] hover:bg-blue-900 text-white font-semibold text-sm py-2.5 rounded-xl shadow flex items-center justify-center gap-2 transition-colors cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Baixar DOCCOB
+                    </button>
+                </div>
+
+                <!-- CONEMB Card -->
+                <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">CONEMB</h3>
+                                <p class="text-xs text-gray-500">Conhecimento de Embarque</p>
+                            </div>
+                            <span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded border border-gray-200">.txt</span>
+                        </div>
+                        
+                        <div class="text-xs space-y-1 text-gray-600 mb-4">
+                            <div class="flex justify-between border-b border-gray-100 py-1"><span>Registros</span><span class="font-medium text-gray-900">321, 322, 323, 329</span></div>
+                            <div class="flex justify-between border-b border-gray-100 py-1"><span>Linhas</span><span class="font-medium text-gray-900">6 linhas × 732 chars</span></div>
+                            <div class="flex justify-between py-1"><span>Remessa</span><span id="conemb-remessa-val" class="font-medium text-gray-900">2607783</span></div>
+                        </div>
+
+                        <!-- Mac Preview Box -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden mb-6 shadow-inner">
+                            <div class="bg-gray-100 border-b border-gray-200 px-3 py-2 flex items-center justify-between">
+                                <div class="flex gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-red-400 block"></span>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-yellow-400 block"></span>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-green-400 block"></span>
+                                </div>
+                                <span id="conemb-filename" class="text-[10px] code-font text-gray-500">CON_B & C CARG15072026151135.txt</span>
+                                <button onclick="copyToClipboard('conemb-text')" class="text-gray-500 hover:text-blue-600 text-[10px] font-medium flex items-center gap-1 cursor-pointer">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg> Copiar
+                                </button>
+                            </div>
+                            <pre id="conemb-preview" class="p-3 text-[10px] code-font text-gray-700 whitespace-pre overflow-x-auto leading-relaxed"></pre>
+                        </div>
+                    </div>
+                    <button onclick="downloadFile('conemb')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm py-2.5 rounded-xl shadow flex items-center justify-center gap-2 transition-colors cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Baixar CONEMB
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bottom Nova Conversao button -->
+            <div class="flex justify-center pt-4">
+                <button onclick="resetApp()" class="border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs px-5 py-2.5 rounded-xl shadow-sm flex items-center gap-2 transition-colors cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.213 6H16"></path></svg>
+                    Nova Conversão
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="text-center py-4 text-xs text-gray-400 border-t border-gray-200 bg-white">
+        Conversor de Layout EDI Proceda padrão DOCCOB e CONEMB · Caucaia / CE
+    </footer>
+
+    <!-- STORES DYNAMIC STRING DATA FOR COPYING -->
+    <div id="hidden-strings" class="hidden">
+        <textarea id="doccob-text"></textarea>
+        <textarea id="conemb-text"></textarea>
+    </div>
+
+    <!-- LOGIC SCRIPT -->
+    <script>
+        // Global variables holding computed text files
+        let generatedDoccobText = "";
+        let generatedConembText = "";
+        let finalDoccobName = "";
+        let finalConembName = "";
+
+        // Helper to pads strings/numbers standard to fixed-width layout rules
+        function pad(value, length, padChar = ' ', padLeft = false) {
+            let str = String(value || '').toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // strip accents
+            // clean special symbols if string
+            if(padChar === '0' || padLeft) {
+                return str.padStart(length, padChar).substring(0, length);
+            }
+            return str.padEnd(length, padChar).substring(0, length);
+        }
+
+        // Clean formatting to return raw digits only
+        function rawDigits(val) {
+            return String(val || '').replace(/\D/g, '');
+        }
+
+        function simulateUpload() {
+            // Pre-populates mock data exactly match visual states
+            document.getElementById("numNota").value = "1521";
+            document.getElementById("codVerificacao").value = "23076502";
+            document.getElementById("dataEmissao").value = "02/07/2026";
+            document.getElementById("dataVencimento").value = "17/07/2026";
+            document.getElementById("valorServicos").value = "816,33";
+            document.getElementById("valorLiquido").value = "800,00";
+            document.getElementById("issRetido").value = "2,00";
+            document.getElementById("aliquotaIss").value = "2,00";
+            document.getElementById("cnpjPrestador").value = "17.718.101/0001-03";
+            document.getElementById("cnpjTomador").value = "07.206.816/0047-06";
+            document.getElementById("nomePrestador").value = "B & C LOGISTICA CARGAS E DESCARGAS LTDA";
+            document.getElementById("nomeTomador").value = "M DIAS BRANCO S.A IND E COM DE ALIM";
+            document.getElementById("municipioPrestador").value = "CAUCAIA";
+            document.getElementById("municipioTomador").value = "Maracanaú";
+            document.getElementById("numRemessa").value = "2607783";
+            document.getElementById("motorista").value = "";
+
+            goToStep2(true);
+        }
+
+        function goToStep2(isFromUpload) {
+            document.getElementById("step-1").classList.add("hidden");
+            document.getElementById("step-2").classList.remove("hidden");
+            document.getElementById("step-3").classList.add("hidden");
+
+            const fileAlert = document.getElementById("file-alert");
+            if (isFromUpload) {
+                fileAlert.classList.remove("hidden");
+                document.getElementById("uploaded-filename").innerText = "1521.pdf";
+            } else {
+                fileAlert.classList.add("hidden");
+            }
+
+            // Update Wizard CSS Stepper Status
+            updateStepper(2);
+        }
+
+        function updateStepper(step) {
+            const s1 = document.getElementById("step-indicator-1");
+            const s2 = document.getElementById("step-indicator-2");
+            const s3 = document.getElementById("step-indicator-3");
+            const n1 = document.getElementById("step-num-1");
+            const n2 = document.getElementById("step-num-2");
+            const n3 = document.getElementById("step-num-3");
+
+            // Reset States
+            [s1, s2, s3].forEach(el => el.className = "flex items-center gap-2 text-gray-400");
+            [n1, n2, n3].forEach(el => el.className = "w-6 h-6 rounded-full bg-white/20 flex items-center justify-center font-bold");
+            n1.innerText = "1"; n2.innerText = "2"; n3.innerText = "3";
+
+            if (step === 2) {
+                s1.className = "flex items-center gap-2 text-emerald-400";
+                n1.className = "w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs";
+                n1.innerHTML = "✓";
+                
+                s2.className = "flex items-center gap-2 text-white font-semibold";
+                n2.className = "w-6 h-6 rounded-full bg-white text-[#0f2c59] flex items-center justify-center font-bold";
+            } else if (step === 3) {
+                s1.className = "flex items-center gap-2 text-emerald-400";
+                n1.className = "w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs";
+                n1.innerHTML = "✓";
+
+                s2.className = "flex items-center gap-2 text-emerald-400";
+                n2.className = "w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs";
+                n2.innerHTML = "✓";
+
+                s3.className = "flex items-center gap-2 text-white font-semibold";
+                n3.className = "w-6 h-6 rounded-full bg-white text-[#0f2c59] flex items-center justify-center font-bold";
+            } else {
+                s1.className = "flex items-center gap-2 text-white font-semibold";
+                n1.className = "w-6 h-6 rounded-full bg-white text-[#0f2c59] flex items-center justify-center font-bold";
+            }
+        }
+
+        function generateEDI(event) {
+            event.preventDefault();
+
+            // Form inputs variables maps
+            const numNota = document.getElementById("numNota").value;
+            const dataEmissao = document.getElementById("dataEmissao").value;
+            const dataVencimento = document.getElementById("dataVencimento").value;
+            const valorServicos = document.getElementById("valorServicos").value;
+            const valorLiquido = document.getElementById("valorLiquido").value || valorServicos;
+            const cnpjPrestador = rawDigits(document.getElementById("cnpjPrestador").value);
+            const cnpjTomador = rawDigits(document.getElementById("cnpjTomador").value);
+            const nomePrestador = document.getElementById("nomePrestador").value || "PRESTADOR";
+            const nomeTomador = document.getElementById("nomeTomador").value || "TOMADOR";
+            const municipioPrestador = document.getElementById("municipioPrestador").value || "";
+            const municipioTomador = document.getElementById("municipioTomador").value || "";
+            const numRemessa = document.getElementById("numRemessa").value;
+
+            // Simple timestamp identifiers matching pattern
+            const now = new Date();
+            const timestamp = "15072026151135"; // Styled placeholder matching screenshot
+            finalDoccobName = `COB_B & C CARG${timestamp}.txt`;
+            finalConembName = `CON_B & C CARG${timestamp}.txt`;
+
+            // Clean amounts to integers cents formats
+            const rawVlrServ = pad(rawDigits(valorServicos), 15, '0', true);
+            const rawVlrLiq = pad(rawDigits(valorLiquido), 15, '0', true);
+            
+            // Format dates compact DDMMYY
+            const fmtDateEmi = dataEmissao.replace(/\D/g, '').substring(0,4) + dataEmissao.replace(/\D/g, '').substring(6,8);
+            const fmtDateVen = dataVencimento.replace(/\D/g, '').substring(0,4) + dataVencimento.replace(/\D/g, '').substring(6,8);
+
+            // --- BUILD DOCCOB TEXT STRING (160 CHARS LENGTH PER ROW STANDARD) ---
+            let d000 = pad("000B & C LOGISTICA CARGAS E DESCARGAS M DIAS BRANCO S.A IND E COM DE ALIM", 160);
+            let d350 = pad(`350COBRA${fmtDateEmi}`, 160);
+            let d351 = pad(`351${cnpjPrestador}B & C LOGISTICA CARGAS E DESCARGAS LTDA`, 160);
+            let d352 = pad(`352${pad(municipioTomador, 15)} 0      000000${numNota}${fmtDateEmi}${fmtDateVen}00000000000000${rawVlrServ}`, 160);
+            let d353 = pad(`353${pad(municipioTomador, 15)} 01      ${numNota}          0000000000816330207202617072026000000000`, 160);
+            let d354 = pad(`354001000${numNota}${fmtDateEmi}00000000000000000000081633`, 160);
+            let d355 = pad(`355000100000000000081633`, 160);
+            generatedDoccobText = `${d000}\n${d350}\n${d351}\n${d352}\n${d353}\n${d354}\n${d355}`;
+
+            // --- BUILD CONEMB TEXT STRING (732 CHARS LENGTH PER ROW STANDARD) ---
+            let c000 = pad("000B & C LOGISTICA CARGAS E DESCARGAS M DIAS BRANCO S.A IND E COM DE ALIM", 732);
+            let c320 = pad(`320CONHE${fmtDateEmi}`, 732);
+            let c321 = pad(`321${cnpjPrestador}B & C LOGISTICA CARGAS E DESCARGAS LTDA`, 732);
+            let c322 = pad(`322${pad(municipioPrestador, 15)} 01      ${numNota}          ${fmtDateEmi}000000000000000000000000`, 732);
+            let c329 = pad(`329 BR0800000000000000000000000000000000200`, 732);
+            let c323 = pad(`323000100000000000081633`, 732);
+            generatedConembText = `${c000}\n${c320}\n${c321}\n${c322}\n${c329}\n${c323}`;
+
+            // Inject file names updates into previews headers
+            document.getElementById("doccob-filename").innerText = finalDoccobName;
+            document.getElementById("conemb-filename").innerText = finalConembName;
+
+            // Output visual representation text block contents
+            document.getElementById("doccob-preview").innerText = generatedDoccobText.split('\n').map((l, i) => `${i+1}   ${l.substring(0, 85)}...`).join('\n');
+            document.getElementById("conemb-preview").innerText = generatedConembText.split('\n').map((l, i) => `${i+1}   ${l.substring(0, 85)}...`).join('\n');
+
+            // Set hidden clipboard contents full text
+            document.getElementById("doccob-text").value = generatedDoccobText;
+            document.getElementById("conemb-text").value = generatedConembText;
+
+            // Top Status Message Update
+            document.getElementById("success-summary").innerText = `NFS-e ${numNota} · ${dataEmissao} · R$ ${valorServicos}`;
+            document.getElementById("doccob-nota-val").innerText = numNota;
+            document.getElementById("conemb-remessa-val").innerText = numRemessa;
+
+            // Route View Viewport To Step 3 Panel
+            document.getElementById("step-2").classList.add("hidden");
+            document.getElementById("step-3").classList.remove("hidden");
+            updateStepper(3);
+        }
+
+        function downloadFile(type) {
+            let text = type === 'doccob' ? generatedDoccobText : generatedConembText;
+            let filename = type === 'doccob' ? finalDoccobName : finalConembName;
+            
+            let element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            element.setAttribute('download', filename);
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        function copyToClipboard(id) {
+            let copyText = document.getElementById(id);
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(copyText.value);
+            alert("Texto copiado para a área de transferência!");
+        }
+
+        function resetApp() {
+            document.getElementById("edi-form").reset();
+            document.getElementById("step-1").classList.remove("hidden");
+            document.getElementById("step-2").classList.add("hidden");
+            document.getElementById("step-3").classList.add("hidden");
+            updateStepper(1);
+        }
+    </script>
+</body>
+</html>
