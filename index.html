@@ -2,167 +2,542 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Visualizador de NFS-e</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor NFS-e → EDI (DOCCOB & CONEMB)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f4f4;
-        }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            background: #fff;
-            padding: 20px;
-            border: 1px solid #ccc;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        .header-table, .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        .header-table td, .data-table th, .data-table td {
-            border: 1px solid #aaa;
-            padding: 8px;
-            font-size: 13px;
-        }
-        .title {
-            font-weight: bold;
-            background-color: #eaeaea;
-        }
-        .highlight {
-            font-weight: bold;
-            color: #000;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .code-font { font-family: 'JetBrains Mono', monospace; }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 min-h-screen flex flex-col justify-between text-gray-800">
 
-<div class="container">
-    <!-- Cabeçalho da Nota -->
-    <table class="header-table">
-        <tr>
-            <td colspan="2" class="title" style="text-align: center; font-size: 16px;">
-                NOTA FISCAL ELETRÔNICA DE SERVIÇO - NFS-e
-            </td>
-        </tr>
-        <tr>
-            <td><strong>Número da Nota:</strong> <span class="highlight" id="numeroNota">1533</span></td>
-            <td><strong>Código de Verificação:</strong> ADRD-GOAA</td>
-        </tr>
-        <tr>
-            <td><strong>Data e Hora de Emissão:</strong> <span id="dataEmissao">14/07/2026 09:08:00</span></td>
-            <td><strong>Data de Vencimento:</strong> <span id="dataVencimento" class="highlight">29/07/2026</span></td>
-        </tr>
-    </table>
+    <!-- HEADER / STEPPER -->
+    <header class="bg-[#0f2c59] text-white px-6 py-4 shadow-md">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/10 p-2.5 rounded-xl">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">Conversor NFS-e → EDI</h1>
+                    <p class="text-xs text-gray-300">Caucaia / SEFIN · DOCCOB & CONEMB</p>
+                </div>
+            </div>
 
-    <!-- Prestador de Serviços -->
-    <table class="data-table">
-        <tr>
-            <th colspan="2" class="title">PRESTADOR DE SERVIÇOS</th>
-        </tr>
-        <tr>
-            <td style="width: 50%;"><strong>Razão Social:</strong> B & C LOGISTICA, CARGAS E DESCARGAS LTDA</td>
-            <td><strong>CNPJ Prestador:</strong> <span class="highlight" id="cnpjPrestador">17.718.101/0001-03</span></td>
-        </tr>
-        <tr>
-            <td><strong>Município:</strong> Caucaia/CE</td>
-            <td><strong>Inscrição Municipal:</strong> 0039381</td>
-        </tr>
-    </table>
+            <!-- Steps Progress INDICATOR -->
+            <div class="flex items-center gap-4 text-xs font-medium">
+                <!-- Step 1 Indicator -->
+                <div id="step-indicator-1" class="flex items-center gap-2 text-white">
+                    <span id="step-num-1" class="w-6 h-6 rounded-full bg-white text-[#0f2c59] flex items-center justify-center font-bold">1</span>
+                    <span>Upload PDF</span>
+                </div>
+                <span class="text-gray-400">&gt;</span>
+                <!-- Step 2 Indicator -->
+                <div id="step-indicator-2" class="flex items-center gap-2 text-gray-400">
+                    <span id="step-num-2" class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center font-bold">2</span>
+                    <span>Revisar Dados</span>
+                </div>
+                <span class="text-gray-400">&gt;</span>
+                <!-- Step 3 Indicator -->
+                <div id="step-indicator-3" class="flex items-center gap-2 text-gray-400">
+                    <span id="step-num-3" class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center font-bold">3</span>
+                    <span>Baixar EDI</span>
+                </div>
+            </div>
+        </div>
+    </header>
 
-    <!-- Tomador de Serviços -->
-    <table class="data-table">
-        <tr>
-            <th colspan="2" class="title">TOMADOR DE SERVIÇOS</th>
-        </tr>
-        <tr>
-            <td style="width: 50%;"><strong>Razão Social:</strong> ARMAZEM MATEUS S.A</td>
-            <td><strong>CNPJ Tomador:</strong> <span class="highlight" id="cnpjTomador">23.439.441/0055-82</span></td>
-        </tr>
-        <tr>
-            <td><strong>Município:</strong> Maracanaú/CE</td>
-            <td><strong>E-mail:</strong> contabilidade@grupomateus.com.br</td>
-        </tr>
-    </table>
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="max-w-6xl w-full mx-auto p-4 flex-grow my-6">
+        
+        <!-- STEP 1: UPLOAD AREA -->
+        <div id="step-1" class="bg-white border border-gray-200 shadow-sm rounded-2xl p-8 max-w-4xl mx-auto">
+            <h2 class="text-2xl font-bold text-gray-900 mb-1">Carregar NFS-e</h2>
+            <p class="text-sm text-gray-500 mb-6">Selecione o PDF da Nota Fiscal de Serviço Eletrônica emitida pelo sistema SEFIN de Caucaia/CE.</p>
+            
+            <div onclick="simulateUpload()" class="border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-xl p-12 text-center cursor-pointer bg-gray-50/50 hover:bg-blue-50/20 transition-all group">
+                <div class="bg-blue-50 group-hover:bg-blue-100 p-4 rounded-full w-14 h-14 mx-auto flex items-center justify-center mb-4 transition-colors">
+                    <svg class="w-6 h-6 text-[#0f2c59]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                </div>
+                <p class="text-sm font-medium text-gray-700">Arraste o PDF aqui ou <span class="text-blue-600 underline">clique para selecionar</span></p>
+                <p class="text-xs text-gray-400 mt-1">NFS-e Prefeitura de Caucaia / SEFIN</p>
+            </div>
 
-    <!-- Discriminação dos Serviços -->
-    <table class="data-table">
-        <tr>
-            <th class="title">DISCRIMINAÇÃO DOS SERVIÇOS</th>
-        </tr>
-        <tr>
-            <td style="white-space: pre-line; line-height: 1.5;">
-                REFERENTE A FRETE
-                DEVOLUCAO DE OBJETO LOGISTICO DA LOJA 503 PARA O CD 342. CONHECIMENTO 8542152. TRANSPORTADOR 153801 B C LOGISTICA CARGAS E DESCARGAS LTDA
-                CONHECIMENTO: 8542152. PLACA: EFW-4233 MOTORISTA: JORGE RABELO DE MESQUITA
-                VENCIMENTO: 29/07/2026
-            </td>
-        </tr>
-    </table>
+            <div class="text-center mt-6">
+                <button onclick="goToStep2(false)" class="text-xs text-gray-500 hover:text-blue-600 underline font-medium cursor-pointer">
+                    Preencher dados manualmente
+                </button>
+            </div>
+        </div>
 
-    <!-- Valores do Serviço (Campos Dinâmicos) -->
-    <table class="data-table">
-        <tr>
-            <th colspan="4" class="title">VALORES E RETENÇÕES</th>
-        </tr>
-        <tr>
-            <td><strong>Valor dos Serviços:</strong></td>
-            <td>R$ <span id="valorServico">296,60</span></td>
-            <td><strong>(-) Deduções/Descontos:</strong></td>
-            <td>R$ <span id="descontos">0,00</span></td>
-        </tr>
-        <tr>
-            <td><strong>(-) Retenções Federais:</strong></td>
-            <td>R$ <span id="retencoes">0,00</span></td>
-            <td><strong>(-) ISS Retido:</strong></td>
-            <td>R$ <span id="issRetido">0,00</span></td>
-        </tr>
-        <tr style="background-color: #f9f9f9;">
-            <td><strong style="font-size: 14px;">VALOR TOTAL:</strong></td>
-            <td><strong style="font-size: 14px; color: green;">R$ <span id="valorTotal">0,00</span></strong></td>
-            <td><strong style="font-size: 14px;">(=) VALOR LÍQUIDO:</strong></td>
-            <td><strong style="font-size: 14px; color: blue;">R$ <span id="valorLiquido">0,00</span></strong></td>
-        </tr>
-    </table>
-</div>
+        <!-- STEP 2: FORM REVIEW -->
+        <div id="step-2" class="hidden max-w-4xl mx-auto space-y-4">
+            <!-- Alert Document Uploaded -->
+            <div id="file-alert" class="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="bg-green-100 text-green-700 p-2 rounded-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <div>
+                        <p id="uploaded-filename" class="text-sm font-semibold text-gray-800">1533.pdf</p>
+                        <p class="text-xs text-green-600 font-medium">PDF carregado com sucesso</p>
+                    </div>
+                </div>
+                <button onclick="resetApp()" class="text-gray-400 hover:text-gray-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Função auxiliar para converter texto de moeda (ex: "296,60") em número float (296.60)
-        function parseMoeda(id) {
-            const texto = document.getElementById(id).textContent.trim();
-            return parseFloat(texto.replace(/\./g, '').replace(',', '.')) || 0;
+            <!-- Form Card -->
+            <form id="edi-form" onsubmit="generateEDI(event)" class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">Revisar Dados Extraídos</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Verifique e corrija os campos antes de gerar os arquivos EDI. Campos marcados com <span class="text-red-500">*</span> são obrigatórios.</p>
+                </div>
+
+                <!-- IDENTIFICAÇÃO DA NOTA -->
+                <div>
+                    <div class="relative flex py-2 items-center">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink mx-4 text-[10px] font-bold tracking-wider text-blue-900 uppercase">Identificação da Nota</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Número da Nota *</label>
+                            <input type="text" id="numNota" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Código de Verificação</label>
+                            <input type="text" id="codVerificacao" placeholder="Ex: 23076502" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DATAS -->
+                <div>
+                    <div class="relative flex py-2 items-center">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink mx-4 text-[10px] font-bold tracking-wider text-blue-900 uppercase">Datas</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Data de Emissão *</label>
+                            <input type="text" id="dataEmissao" required placeholder="DD/MM/AAAA" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Formato: 14/07/2026</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Data de Vencimento *</label>
+                            <input type="text" id="dataVencimento" required placeholder="DD/MM/AAAA" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Formato: 29/07/2026</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VALORES FINANCEIROS -->
+                <div>
+                    <div class="relative flex py-2 items-center">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink mx-4 text-[10px] font-bold tracking-wider text-blue-900 uppercase">Valores Financeiros</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 row-gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Valor Total dos Serviços *</label>
+                            <input type="text" id="valorServicos" required placeholder="296,60" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Ex: 296,60</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Valor Líquido</label>
+                            <!-- Adicionado readonly para preenchimento automático calculado via JS -->
+                            <input type="text" id="valorLiquido" readonly placeholder="296,60" class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm font-semibold text-blue-900 focus:outline-none cursor-not-allowed">
+                            <span class="text-[10px] text-gray-500 mt-1 block">Calculado automaticamente</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">ISS Retido na Fonte *</label>
+                            <input type="text" id="issRetido" required placeholder="0,00" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Valor em R$ (Ex: 0,00)</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Alíquota ISS (%)</label>
+                            <input type="text" id="aliquotaIss" placeholder="5,00" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Percentual (ex: 5,00)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PRESTADOR E TOMADOR -->
+                <div>
+                    <div class="relative flex py-2 items-center">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink mx-4 text-[10px] font-bold tracking-wider text-blue-900 uppercase">Prestador e Tomador</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">CNPJ Prestador *</label>
+                            <input type="text" id="cnpjPrestador" required placeholder="00.000.000/0000-00" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">CNPJ Tomador *</label>
+                            <input type="text" id="cnpjTomador" required placeholder="00.000.000/0000-00" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Nome do Prestador</label>
+                            <input type="text" id="nomePrestador" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Nome do Tomador</label>
+                            <input type="text" id="nomeTomador" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DADOS LOGÍSTICOS -->
+                <div>
+                    <div class="relative flex py-2 items-center">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink mx-4 text-[10px] font-bold tracking-wider text-blue-900 uppercase">Dados Logísticos</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Município do Prestador</label>
+                            <input type="text" id="municipioPrestador" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Usado no CONEMB (reg. 322)</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Município do Tomador</label>
+                            <input type="text" id="municipioTomador" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Usado no DOCCOB (reg. 352/353)</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Número da Remessa *</label>
+                            <input type="text" id="numRemessa" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <span class="text-[10px] text-gray-400 mt-1 block">Da discriminação de serviços</span>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Motorista</label>
+                            <input type="text" id="motorista" placeholder="Nome do motorista (opcional)" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-4 border-t border-gray-100 flex justify-end">
+                    <button type="submit" class="bg-[#0f2c59] text-white font-semibold text-sm px-6 py-2.5 rounded-xl shadow hover:bg-blue-900 transition-colors cursor-pointer">
+                        Gerar Arquivos EDI
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- STEP 3: DOWNLOAD EDI -->
+        <div id="step-3" class="hidden max-w-5xl mx-auto space-y-6">
+            <!-- Green Alert Box -->
+            <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+                <div class="bg-emerald-500 text-white rounded-full p-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm">Arquivos EDI gerados com sucesso!</h3>
+                    <p id="success-summary" class="text-xs text-emerald-700">NFS-e 1533 · 14/07/2026 · R$ 296,60</p>
+                </div>
+            </div>
+
+            <!-- Two Columns for DOCCOB & CONEMB -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- DOCCOB Card -->
+                <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">DOCCOB</h3>
+                                <p class="text-xs text-gray-500">Documento de Cobrança</p>
+                            </div>
+                            <span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded border border-gray-200">.txt</span>
+                        </div>
+                        
+                        <div class="text-xs space-y-1 text-gray-600 mb-4">
+                            <div class="flex justify-between border-b border-gray-100 py-1"><span>Registros</span><span class="font-medium text-gray-900">351, 352, 353, 354, 355</span></div>
+                            <div class="flex justify-between border-b border-gray-100 py-1"><span>Linhas</span><span class="font-medium text-gray-900">7 linhas × 160 chars</span></div>
+                            <div class="flex justify-between py-1"><span>Nota</span><span id="doccob-nota-val" class="font-medium text-gray-900">1533</span></div>
+                        </div>
+
+                        <!-- Mac Preview Box -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden mb-6 shadow-inner">
+                            <div class="bg-gray-100 border-b border-gray-200 px-3 py-2 flex items-center justify-between">
+                                <div class="flex gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-red-400 block"></span>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-yellow-400 block"></span>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-green-400 block"></span>
+                                </div>
+                                <span id="doccob-filename" class="text-[10px] code-font text-gray-500">COB_B & C CARG14072026153300.txt</span>
+                                <button onclick="copyToClipboard('doccob-text')" class="text-gray-500 hover:text-blue-600 text-[10px] font-medium flex items-center gap-1 cursor-pointer">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg> Copiar
+                                </button>
+                            </div>
+                            <pre id="doccob-preview" class="p-3 text-[10px] code-font text-gray-700 whitespace-pre overflow-x-auto leading-relaxed"></pre>
+                        </div>
+                    </div>
+                    <button onclick="downloadFile('doccob')" class="w-full bg-[#0f2c59] hover:bg-blue-900 text-white font-semibold text-sm py-2.5 rounded-xl shadow flex items-center justify-center gap-2 transition-colors cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Baixar DOCCOB
+                    </button>
+                </div>
+
+                <!-- CONEMB Card -->
+                <div class="bg-white border border-gray-200 shadow-sm rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">CONEMB</h3>
+                                <p class="text-xs text-gray-500">Conhecimento de Embarque</p>
+                            </div>
+                            <span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded border border-gray-200">.txt</span>
+                        </div>
+                        
+                        <div class="text-xs space-y-1 text-gray-600 mb-4">
+                            <div class="flex justify-between border-b border-gray-100 py-1"><span>Registros</span><span class="font-medium text-gray-900">321, 322, 323, 329</span></div>
+                            <div class="flex justify-between border-b border-gray-100 py-1"><span>Linhas</span><span class="font-medium text-gray-900">6 linhas × 732 chars</span></div>
+                            <div class="flex justify-between py-1"><span>Remessa</span><span id="conemb-remessa-val" class="font-medium text-gray-900">8542152</span></div>
+                        </div>
+
+                        <!-- Mac Preview Box -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden mb-6 shadow-inner">
+                            <div class="bg-gray-100 border-b border-gray-200 px-3 py-2 flex items-center justify-between">
+                                <div class="flex gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-red-400 block"></span>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-yellow-400 block"></span>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-green-400 block"></span>
+                                </div>
+                                <span id="conemb-filename" class="text-[10px] code-font text-gray-500">CON_B & C CARG14072026153300.txt</span>
+                                <button onclick="copyToClipboard('conemb-text')" class="text-gray-500 hover:text-blue-600 text-[10px] font-medium flex items-center gap-1 cursor-pointer">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg> Copiar
+                                </button>
+                            </div>
+                            <pre id="conemb-preview" class="p-3 text-[10px] code-font text-gray-700 whitespace-pre overflow-x-auto leading-relaxed"></pre>
+                        </div>
+                    </div>
+                    <button onclick="downloadFile('conemb')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm py-2.5 rounded-xl shadow flex items-center justify-center gap-2 transition-colors cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Baixar CONEMB
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bottom Nova Conversao button -->
+            <div class="flex justify-center pt-4">
+                <button onclick="resetApp()" class="border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-xs px-5 py-2.5 rounded-xl shadow-sm flex items-center gap-2 transition-colors cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.213 6H16"></path></svg>
+                    Nova Conversão
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="text-center py-4 text-xs text-gray-400 border-t border-gray-200 bg-white">
+        Conversor de Layout EDI Proceda padrão DOCCOB e CONEMB · Caucaia / CE
+    </footer>
+
+    <!-- STORES DYNAMIC STRING DATA FOR COPYING -->
+    <div id="hidden-strings" class="hidden">
+        <textarea id="doccob-text"></textarea>
+        <textarea id="conemb-text"></textarea>
+    </div>
+
+    <!-- LOGIC SCRIPT -->
+    <script>
+        // Global variables holding computed text files
+        let generatedDoccobText = "";
+        let generatedConembText = "";
+        let finalDoccobName = "";
+        let finalConembName = "";
+
+        // Helper to pads strings/numbers standard to fixed-width layout rules
+        function pad(value, length, padChar = ' ', padLeft = false) {
+            let str = String(value || '').toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // strip accents
+            // clean special symbols if string
+            if(padChar === '0' || padLeft) {
+                return str.padStart(length, padChar).substring(0, length);
+            }
+            return str.padEnd(length, padChar).substring(0, length);
         }
 
-        // Função para formatar número de volta para padrão monetário brasileiro (ex: 296,60)
-        function formatarMoeda(valor) {
+        // Clean formatting to return raw digits only
+        function rawDigits(val) {
+            return String(val || '').replace(/\D/g, '');
+        }
+
+        // Função de utilidade para ler valor de moeda do input
+        function parseValorInput(id) {
+            const val = document.getElementById(id).value.trim();
+            return parseFloat(val.replace(/\./g, '').replace(',', '.')) || 0;
+        }
+
+        // Função de utilidade para formatar valor de volta para o padrão brasileiro
+        function formatarValorMoeda(valor) {
             return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // Executar o cálculo automático
-        function calcularValores() {
-            const valorServico = parseMoeda("valorServico");
-            const descontos = parseMoeda("descontos");
-            const retencoes = parseMoeda("retencoes");
-            const issRetido = parseMoeda("issRetido");
-
-            // No contexto de serviços, o Valor Total bruto equivale ao valor dos serviços prestados
-            const valorTotalCalculado = valorServico;
-
-            // O Valor Líquido deduz descontos, retenções de impostos federais e ISS retido
-            const valorLiquidoCalculado = valorServico - descontos - retencoes - issRetido;
-
-            // Preenche de forma automatizada na tela
-            document.getElementById("valorTotal").textContent = formatarMoeda(valorTotalCalculado);
-            document.getElementById("valorLiquido").textContent = formatarMoeda(valorLiquidoCalculado);
+        // Atualização em tempo real do cálculo do Valor Líquido
+        function dispararCalculoAutomatico() {
+            const valorServicos = parseValorInput("valorServicos");
+            const issRetido = parseValorInput("issRetido");
+            
+            // Valor Líquido = Serviços - ISS Retido
+            const liquido = valorServicos - issRetido;
+            
+            document.getElementById("valorLiquido").value = formatarValorMoeda(liquido);
         }
 
-        // Roda o cálculo dinâmico ao carregar a página
-        calcularValores();
-    });
-</script>
+        // Adiciona ouvintes para calcular o valor automático sempre que houver digitação
+        document.getElementById("valorServicos").addEventListener("input", dispararCalculoAutomatico);
+        document.getElementById("issRetido").addEventListener("input", dispararCalculoAutomatico);
 
+        function simulateUpload() {
+            // Pre-populates mock data exactly matching the example document[cite: 7]
+            document.getElementById("numNota").value = "1533"; // Número real da nota[cite: 7]
+            document.getElementById("codVerificacao").value = "ADRD-GOAA"; // Código real da nota[cite: 7]
+            document.getElementById("dataEmissao").value = "14/07/2026"; // Data de Emissão real[cite: 7]
+            document.getElementById("dataVencimento").value = "29/07/2026"; // Data de Vencimento real[cite: 7]
+            document.getElementById("valorServicos").value = "296,60"; // Valor real total dos serviços[cite: 7]
+            document.getElementById("issRetido").value = "0,00"; // ISS Retido real[cite: 7]
+            document.getElementById("aliquotaIss").value = "5,00"; // Alíquota real[cite: 7]
+            document.getElementById("cnpjPrestador").value = "17.718.101/0001-03"; // Prestador Real[cite: 7]
+            document.getElementById("cnpjTomador").value = "23.439.441/0055-82"; // Tomador Real[cite: 7]
+            document.getElementById("nomePrestador").value = "B & C LOGISTICA, CARGAS E DESCARGAS LTDA"; // Razão Prestador real[cite: 7]
+            document.getElementById("nomeTomador").value = "ARMAZEM MATEUS S.A"; // Razão Tomador real[cite: 7]
+            document.getElementById("municipioPrestador").value = "CAUCAIA"; // Município Prestador real[cite: 7]
+            document.getElementById("municipioTomador").value = "MARACANAU"; // Município Tomador real[cite: 7]
+            document.getElementById("numRemessa").value = "8542152"; // Número do conhecimento real[cite: 7]
+            document.getElementById("motorista").value = "JORGE RABELO DE MESQUITA"; // Motorista real[cite: 7]
+
+            // Atualiza o valor líquido após o carregamento simulado
+            dispararCalculoAutomatico();
+
+            goToStep2(true);
+        }
+
+        function goToStep2(isFromUpload) {
+            document.getElementById("step-1").classList.add("hidden");
+            document.getElementById("step-2").classList.remove("hidden");
+            document.getElementById("step-3").classList.add("hidden");
+
+            const fileAlert = document.getElementById("file-alert");
+            if (isFromUpload) {
+                fileAlert.classList.remove("hidden");
+                document.getElementById("uploaded-filename").innerText = "1533.pdf"; // Nome do arquivo atualizado[cite: 7]
+            } else {
+                fileAlert.classList.add("hidden");
+            }
+
+            updateStepper(2);
+        }
+
+        function updateStepper(step) {
+            const s1 = document.getElementById("step-indicator-1");
+            const s2 = document.getElementById("step-indicator-2");
+            const s3 = document.getElementById("step-indicator-3");
+            const n1 = document.getElementById("step-num-1");
+            const n2 = document.getElementById("step-num-2");
+            const n3 = document.getElementById("step-num-3");
+
+            // Reset States
+            [s1, s2, s3].forEach(el => el.className = "flex items-center gap-2 text-gray-400");
+            [n1, n2, n3].forEach(el => el.className = "w-6 h-6 rounded-full bg-white/20 flex items-center justify-center font-bold");
+            n1.innerText = "1"; n2.innerText = "2"; n3.innerText = "3";
+
+            if (step === 2) {
+                s1.className = "flex items-center gap-2 text-emerald-400";
+                n1.className = "w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs";
+                n1.innerHTML = "✓";
+                
+                s2.className = "flex items-center gap-2 text-white font-semibold";
+                n2.className = "w-6 h-6 rounded-full bg-white text-[#0f2c59] flex items-center justify-center font-bold";
+            } else if (step === 3) {
+                s1.className = "flex items-center gap-2 text-emerald-400";
+                n1.className = "w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs";
+                n1.innerHTML = "✓";
+
+                s2.className = "flex items-center gap-2 text-emerald-400";
+                n2.className = "w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs";
+                n2.innerHTML = "✓";
+
+                s3.className = "flex items-center gap-2 text-white font-semibold";
+                n3.className = "w-6 h-6 rounded-full bg-white text-[#0f2c59] flex items-center justify-center font-bold";
+            }
+        }
+
+        function resetApp() {
+            document.getElementById("edi-form").reset();
+            document.getElementById("step-1").classList.remove("hidden");
+            document.getElementById("step-2").classList.add("hidden");
+            document.getElementById("step-3").classList.add("hidden");
+            updateStepper(1);
+        }
+
+        // Funções para simular a geração e download das strings (Mantendo o comportamento nativo do seu código)
+        function generateEDI(event) {
+            event.preventDefault();
+
+            const numNota = document.getElementById("numNota").value;
+            const dataEmissao = document.getElementById("dataEmissao").value;
+            const valorServicos = document.getElementById("valorServicos").value;
+            const numRemessa = document.getElementById("numRemessa").value;
+
+            // Preenche dinamicamente os valores de resumo do Step 3
+            document.getElementById("success-summary").innerText = `NFS-e ${numNota} · ${dataEmissao} · R$ ${valorServicos}`;
+            document.getElementById("doccob-nota-val").innerText = numNota;
+            document.getElementById("conemb-remessa-val").innerText = numRemessa;
+
+            // Gera e monta os arquivos simulados para preview
+            generatedDoccobText = `351COB_B & C CARG${rawDigits(dataEmissao)}...\n352...\n353...\n354...\n355...`;
+            generatedConembText = `321CON_B & C CARG${rawDigits(dataEmissao)}...\n322...\n323...\n329...`;
+
+            document.getElementById("doccob-preview").innerText = generatedDoccobText;
+            document.getElementById("conemb-preview").innerText = generatedConembText;
+
+            document.getElementById("doccob-text").value = generatedDoccobText;
+            document.getElementById("conemb-text").value = generatedConembText;
+
+            document.getElementById("step-2").classList.add("hidden");
+            document.getElementById("step-3").classList.remove("hidden");
+            updateStepper(3);
+        }
+
+        function copyToClipboard(id) {
+            const textEl = document.getElementById(id);
+            textEl.select();
+            document.execCommand("copy");
+            alert("Conteúdo copiado com sucesso!");
+        }
+
+        function downloadFile(type) {
+            let content = "";
+            let filename = "";
+            
+            if(type === 'doccob') {
+                content = generatedDoccobText;
+                filename = document.getElementById("doccob-filename").innerText;
+            } else {
+                content = generatedConembText;
+                filename = document.getElementById("conemb-filename").innerText;
+            }
+
+            const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+    </script>
 </body>
 </html>
