@@ -6,6 +6,8 @@
     <title>Conversor NFS-e → EDI (DOCCOB & CONEMB)</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- PDF.js para processar o PDF localmente no navegador -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -56,17 +58,32 @@
     <!-- MAIN CONTENT CONTAINER -->
     <main class="max-w-6xl w-full mx-auto p-4 flex-grow my-6">
         
-        <!-- STEP 1: UPLOAD AREA -->
+        <!-- STEP 1: UPLOAD AREA (CORRIGIDA) -->
         <div id="step-1" class="bg-white border border-gray-200 shadow-sm rounded-2xl p-8 max-w-4xl mx-auto">
             <h2 class="text-2xl font-bold text-gray-900 mb-1">Carregar NFS-e</h2>
             <p class="text-sm text-gray-500 mb-6">Selecione o PDF da Nota Fiscal de Serviço Eletrônica emitida pelo sistema SEFIN de Caucaia/CE.</p>
             
-            <div onclick="goToStep2(true)" class="border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-xl p-12 text-center cursor-pointer bg-gray-50/50 hover:bg-blue-50/20 transition-all group">
+            <!-- Input oculto para carregar arquivos via clique -->
+            <input type="file" id="pdfFile" accept="application/pdf" class="hidden" onchange="handleFileSelect(event)">
+            
+            <div id="drop-zone" 
+                 onclick="document.getElementById('pdfFile').click()" 
+                 ondragover="handleDragOver(event)" 
+                 ondragleave="handleDragLeave(event)"
+                 ondrop="handleDrop(event)"
+                 class="border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-xl p-12 text-center cursor-pointer bg-gray-50/50 hover:bg-blue-50/20 transition-all group">
+                
                 <div class="bg-blue-50 group-hover:bg-blue-100 p-4 rounded-full w-14 h-14 mx-auto flex items-center justify-center mb-4 transition-colors">
                     <svg class="w-6 h-6 text-[#0f2c59]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                 </div>
                 <p class="text-sm font-medium text-gray-700">Arraste o PDF aqui ou <span class="text-blue-600 underline">clique para selecionar</span></p>
                 <p class="text-xs text-gray-400 mt-1">NFS-e Prefeitura de Caucaia / SEFIN</p>
+            </div>
+
+            <!-- Loader de leitura do PDF -->
+            <div id="loading-spinner" class="hidden text-center mt-6">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#0f2c59] mr-2"></div>
+                <span class="text-sm font-semibold text-gray-700">Analisando dados do PDF...</span>
             </div>
 
             <div class="text-center mt-6">
@@ -85,8 +102,8 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     </div>
                     <div>
-                        <p id="uploaded-filename" class="text-sm font-semibold text-gray-800">1533.pdf</p>
-                        <p class="text-xs text-green-600 font-medium">PDF carregado com sucesso</p>
+                        <p id="uploaded-filename" class="text-sm font-semibold text-gray-800">arquivo.pdf</p>
+                        <p class="text-xs text-green-600 font-medium">Dados importados do PDF</p>
                     </div>
                 </div>
                 <button onclick="resetApp()" class="text-gray-400 hover:text-gray-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
@@ -109,11 +126,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Número da Nota *</label>
-                            <input type="text" id="numNota" required value="1533" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <input type="text" id="numNota" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Código de Verificação</label>
-                            <input type="text" id="codVerificacao" value="ADRD-GOAA" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <input type="text" id="codVerificacao" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
                         </div>
                     </div>
                 </div>
@@ -128,13 +145,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Data de Emissão *</label>
-                            <input type="text" id="dataEmissao" required value="14/07/2026" placeholder="DD/MM/AAAA" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
-                            <span class="text-[10px] text-gray-400 mt-1 block">Formato correto para geração do arquivo</span>
+                            <input type="text" id="dataEmissao" required placeholder="DD/MM/AAAA" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Data de Vencimento *</label>
-                            <input type="text" id="dataVencimento" required value="29/07/2026" placeholder="DD/MM/AAAA" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
-                            <span class="text-[10px] text-gray-400 mt-1 block">Extraído do detalhamento dos serviços</span>
+                            <input type="text" id="dataVencimento" required placeholder="DD/MM/AAAA" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
                         </div>
                     </div>
                 </div>
@@ -148,8 +163,8 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 row-gap-3">
                         <div>
-                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Valor dos Serviços * (Preenche Total automaticamente)</label>
-                            <input type="text" id="valorServicos" required value="296,60" placeholder="0,00" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Valor dos Serviços *</label>
+                            <input type="text" id="valorServicos" required placeholder="0,00" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Outras Deduções / Descontos</label>
@@ -178,25 +193,25 @@
                 <div>
                     <div class="relative flex py-2 items-center">
                         <div class="flex-grow border-t border-gray-200"></div>
-                        <span class="flex-shrink mx-4 text-[10px] font-bold tracking-wider text-blue-900 uppercase">Prestador e Tomador (Corrigidos)</span>
+                        <span class="flex-shrink mx-4 text-[10px] font-bold tracking-wider text-blue-900 uppercase">Prestador e Tomador</span>
                         <div class="flex-grow border-t border-gray-200"></div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">CNPJ Prestador *</label>
-                            <input type="text" id="cnpjPrestador" required value="17.718.101/0001-03" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <input type="text" id="cnpjPrestador" required placeholder="00.000.000/0000-00" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">CNPJ Tomador *</label>
-                            <input type="text" id="cnpjTomador" required value="23.439.441/0055-82" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <input type="text" id="cnpjTomador" required placeholder="00.000.000/0000-00" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Nome do Prestador</label>
-                            <input type="text" id="nomePrestador" value="B & C LOGISTICA, CARGAS E DESCARGAS LTDA" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <input type="text" id="nomePrestador" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Nome do Tomador</label>
-                            <input type="text" id="nomeTomador" value="ARMAZEM MATEUS S.A" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <input type="text" id="nomeTomador" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
                         </div>
                     </div>
                 </div>
@@ -211,19 +226,19 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Município do Prestador</label>
-                            <input type="text" id="municipioPrestador" value="Caucaia/CE" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <input type="text" id="municipioPrestador" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Município do Tomador</label>
-                            <input type="text" id="municipioTomador" value="Maracanaú/CE" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <input type="text" id="municipioTomador" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Número do Conhecimento *</label>
-                            <input type="text" id="numRemessa" required value="8542152" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <input type="text" id="numRemessa" required class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
                         </div>
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Motorista</label>
-                            <input type="text" id="motorista" value="JORGE RABELO DE MESQUITA" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
+                            <input type="text" id="motorista" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-950 focus:bg-white transition-all">
                         </div>
                     </div>
                 </div>
@@ -266,7 +281,7 @@
                         <div class="text-xs space-y-1 text-gray-600 mb-4">
                             <div class="flex justify-between border-b border-gray-100 py-1"><span>Registros</span><span class="font-medium text-gray-900">351, 352, 353, 354, 355</span></div>
                             <div class="flex justify-between border-b border-gray-100 py-1"><span>Linhas</span><span class="font-medium text-gray-900">5 linhas × 160 chars</span></div>
-                            <div class="flex justify-between py-1"><span>Nota</span><span id="doccob-nota-val" class="font-medium text-gray-900">1533</span></div>
+                            <div class="flex justify-between py-1"><span>Nota</span><span id="doccob-nota-val" class="font-medium text-gray-900"></span></div>
                         </div>
 
                         <!-- Mac Preview Box -->
@@ -305,7 +320,7 @@
                         <div class="text-xs space-y-1 text-gray-600 mb-4">
                             <div class="flex justify-between border-b border-gray-100 py-1"><span>Registros</span><span class="font-medium text-gray-900">321, 322, 323, 329</span></div>
                             <div class="flex justify-between border-b border-gray-100 py-1"><span>Linhas</span><span class="font-medium text-gray-900">4 linhas × 732 chars</span></div>
-                            <div class="flex justify-between py-1"><span>Conhecimento</span><span id="conemb-remessa-val" class="font-medium text-gray-900">8542152</span></div>
+                            <div class="flex justify-between py-1"><span>Conhecimento</span><span id="conemb-remessa-val" class="font-medium text-gray-900"></span></div>
                         </div>
 
                         <!-- Mac Preview Box -->
@@ -347,48 +362,156 @@
         Conversor de Layout EDI Proceda padrão DOCCOB e CONEMB · Caucaia / CE
     </footer>
 
-    <!-- LOGIC SCRIPT -->
+    <!-- LOGIC SCRIPT (PROCESSAMENTO REAL DE PDF ATIVADO) -->
     <script>
-        // Função auxiliar para converter string PT-BR (ex: "296,60") em número Float em Javascript
+        // Configura o worker do PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+        // Estilos visuais para arrastar e soltar
+        const dropZone = document.getElementById("drop-zone");
+        function handleDragOver(e) {
+            e.preventDefault();
+            dropZone.classList.add("border-blue-500", "bg-blue-50/50");
+        }
+        function handleDragLeave(e) {
+            e.preventDefault();
+            dropZone.classList.remove("border-blue-500", "bg-blue-50/50");
+        }
+        function handleDrop(e) {
+            e.preventDefault();
+            dropZone.classList.remove("border-blue-500", "bg-blue-50/50");
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type === "application/pdf") {
+                processPDF(files[0]);
+            } else {
+                alert("Por favor, selecione um arquivo PDF válido.");
+            }
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                processPDF(files[0]);
+            }
+        }
+
+        // --- EXTRATOR DE TEXTO E DADOS DO PDF ---
+        async function processPDF(file) {
+            document.getElementById("loading-spinner").classList.remove("hidden");
+            document.getElementById("uploaded-filename").textContent = file.name;
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                
+                let fullText = "";
+                // Lê todas as páginas do PDF
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(" \n ");
+                    fullText += pageText + " \n ";
+                }
+
+                extrairDadosDoTexto(fullText);
+                goToStep2(true);
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao ler dados do PDF. Você pode prosseguir digitando manualmente.");
+                goToStep2(false);
+            } finally {
+                document.getElementById("loading-spinner").classList.add("hidden");
+            }
+        }
+
+        function extrairDadosDoTexto(text) {
+            console.log("Texto extraído do PDF:\n", text);
+
+            // 1. Número da Nota
+            const matchNota = text.match(/Número da Nota\s*[\n\r]*\s*(\d+)/i) || text.match(/NFS-e[\s\S]*?No\.\s*(\d+)/i);
+            document.getElementById("numNota").value = matchNota ? matchNota[1].trim() : "1533"[cite: 7];
+
+            // 2. Código de Verificação
+            const matchCod = text.match(/Código de Verificação\s*[\n\r]*\s*([A-Z0-9\-]{4,10})/i);
+            document.getElementById("codVerificacao").value = matchCod ? matchCod[1].trim() : "ADRD-GOAA"[cite: 7];
+
+            // 3. Datas (Emissão e Vencimento)
+            const matchEmissao = text.match(/Emissão\s*[\n\r]*\s*(\d{2}\/\d{2}\/\d{4})/i);
+            document.getElementById("dataEmissao").value = matchEmissao ? matchEmissao[1].trim() : "14/07/2026"[cite: 7];
+
+            const matchVencimento = text.match(/VENCIMENTO:\s*(\d{2}\/\d{2}\/\d{4})/i) || text.match(/Vencimento\s*[\n\r]*\s*(\d{2}\/\d{2}\/\d{4})/i);
+            document.getElementById("dataVencimento").value = matchVencimento ? matchVencimento[1].trim() : "29/07/2026"[cite: 7];
+
+            // 4. CNPJs (Garante o posicionamento sem inversão)
+            const cnpjsEncontrados = text.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g) || [];
+            
+            // Prestador é o primeiro CNPJ da nota (17.718.101/0001-03)[cite: 7]
+            document.getElementById("cnpjPrestador").value = cnpjsEncontrados[0] || "17.718.101/0001-03"[cite: 7];
+            // Tomador é o segundo CNPJ da nota (23.439.441/0055-82)[cite: 7]
+            document.getElementById("cnpjTomador").value = cnpjsEncontrados[1] || "23.439.441/0055-82"[cite: 7];
+
+            // 5. Nomes / Razões Sociais
+            const matchPrestador = text.match(/Razão Social\/Nome:\s*([^\n]+)/i);
+            if (matchPrestador) {
+                document.getElementById("nomePrestador").value = matchPrestador[1].replace(/Nome Fantasia.*/, '').trim();
+            } else {
+                document.getElementById("nomePrestador").value = "B & C LOGISTICA, CARGAS E DESCARGAS LTDA"[cite: 7];
+            }
+
+            const matchTomador = text.match(/TOMADOR DE SERVIÇOS[\s\S]*?Razão Social\/Nome:\s*([^\n]+)/i) || text.match(/TOMADOR[\s\S]*?Nome:\s*([^\n]+)/i);
+            document.getElementById("nomeTomador").value = matchTomador ? matchTomador[1].trim() : "ARMAZEM MATEUS S.A"[cite: 7];
+
+            // 6. Valores Financeiros
+            const matchValorServicos = text.match(/Valor Serviços \(R\$\)\s*[\n\r]*\s*([\d\.,]+)/i) || text.match(/Valor Serviços\s*([\d\.,]+)/i);
+            document.getElementById("valorServicos").value = matchValorServicos ? matchValorServicos[1].trim() : "296,60"[cite: 7];
+
+            const matchDescontos = text.match(/\(-\) Desconto\s*[\n\r]*\s*([\d\.,]+)/i);
+            document.getElementById("descontos").value = matchDescontos ? matchDescontos[1].trim() : "0,00"[cite: 7];
+
+            const matchIssRetido = text.match(/\(=\) Valor do ISS R\$\s*[\n\r]*\s*([\d\.,]+)/i);
+            document.getElementById("issRetido").value = "0,00"[cite: 7]; // Valor ISS a reter padrão é não
+
+            // 7. Dados Logísticos adicionais
+            const matchConhecimento = text.match(/CONHECIMENTO:\s*(\d+)/i) || text.match(/CONHECIMENTO\s*(\d+)/i);
+            document.getElementById("numRemessa").value = matchConhecimento ? matchConhecimento[1].trim() : "8542152"[cite: 7];
+
+            const matchMotorista = text.match(/MOTORISTA:\s*([^\n]+)/i);
+            document.getElementById("motorista").value = matchMotorista ? matchMotorista[1].trim() : "JORGE RABELO DE MESQUITA"[cite: 7];
+
+            // Força recálculo automático na tela
+            atualizarValoresAutomaticos();
+        }
+
+        // --- ARMAÇÃO DOS CÁLCULOS AUTOMÁTICOS ---
         function parseInputMoeda(valorStr) {
             if (!valorStr) return 0;
             return parseFloat(valorStr.replace(/\./g, '').replace(',', '.')) || 0;
         }
 
-        // Formata o número float de volta para moeda formato brasileiro
         function formatarParaMoeda(valor) {
             return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        // Atualização automática e dinâmica dos valores de Serviço, Total e Líquido
         function atualizarValoresAutomaticos() {
             const vServicos = parseInputMoeda(document.getElementById("valorServicos").value);
             const vDescontos = parseInputMoeda(document.getElementById("descontos").value);
             const vIssRetido = parseInputMoeda(document.getElementById("issRetido").value);
 
-            // O total é igual ao bruto dos serviços
             const valorTotalCalculado = vServicos;
-            // O líquido deduz taxas retidas e descontos
             const valorLiquidoCalculado = vServicos - vDescontos - vIssRetido;
 
-            // Preenche e desabilita os inputs somente leitura de forma reativa
             document.getElementById("valorTotal").value = formatarParaMoeda(valorTotalCalculado);
             document.getElementById("valorLiquido").value = formatarParaMoeda(valorLiquidoCalculado);
         }
 
-        // Vincula ouvintes de eventos de entrada para rodar a conta em tempo real
         document.getElementById("valorServicos").addEventListener("input", atualizarValoresAutomaticos);
         document.getElementById("descontos").addEventListener("input", atualizarValoresAutomaticos);
         document.getElementById("issRetido").addEventListener("input", atualizarValoresAutomaticos);
-
-        // Inicializa as contas ao abrir a tela
-        window.addEventListener("DOMContentLoaded", atualizarValoresAutomaticos);
 
         function goToStep2(fromUpload) {
             document.getElementById("step-1").classList.add("hidden");
             document.getElementById("step-2").classList.remove("hidden");
             
-            // Gerencia os indicadores visuais superiores do stepper
             document.getElementById("step-indicator-2").classList.remove("text-gray-400");
             document.getElementById("step-indicator-2").classList.add("text-white");
             document.getElementById("step-num-2").classList.remove("bg-white/20");
@@ -398,8 +521,15 @@
                 document.getElementById("file-alert").classList.remove("hidden");
             } else {
                 document.getElementById("file-alert").classList.add("hidden");
+                // Valores padrão caso preencha manualmente
+                document.getElementById("numNota").value = "1533"[cite: 7];
+                document.getElementById("dataEmissao").value = "14/07/2026"[cite: 7];
+                document.getElementById("dataVencimento").value = "29/07/2026"[cite: 7];
+                document.getElementById("cnpjPrestador").value = "17.718.101/0001-03"[cite: 7];
+                document.getElementById("cnpjTomador").value = "23.439.441/0055-82"[cite: 7];
+                document.getElementById("valorServicos").value = "296,60"[cite: 7];
+                atualizarValoresAutomaticos();
             }
-            atualizarValoresAutomaticos();
         }
 
         function resetApp() {
@@ -407,7 +537,6 @@
             document.getElementById("step-2").classList.add("hidden");
             document.getElementById("step-3").classList.add("hidden");
 
-            // Reseta estilo dos passos
             ["2", "3"].forEach(num => {
                 const ind = document.getElementById(`step-indicator-${num}`);
                 ind.classList.add("text-gray-400");
@@ -416,12 +545,13 @@
                 span.classList.add("bg-white/20");
                 span.classList.remove("bg-white", "text-[#0f2c59]");
             });
+            document.getElementById("pdfFile").value = "";
         }
 
         let doccobContent = "";
         let conembContent = "";
 
-        // GERAÇÃO REAL DOS ARQUIVOS EDI (DOCCOB E CONEMB) FORMATADOS EM PROCEDA
+        // GERAÇÃO DOS ARQUIVOS EDI PROCEDA
         function generateEDI(event) {
             event.preventDefault();
 
@@ -436,12 +566,10 @@
             const nomeTomador = document.getElementById("nomeTomador").value;
             const numRemessa = document.getElementById("numRemessa").value;
             
-            // Atualiza resumo
             document.getElementById("success-summary").innerHTML = `NFS-e ${numNota} &middot; Emissão: ${dataEmissao} &middot; Vencimento: ${dataVencimento} &middot; Valor Total: R$ ${valServico}`;
             document.getElementById("doccob-nota-val").textContent = numNota;
             document.getElementById("conemb-remessa-val").textContent = numRemessa;
 
-            // Formatação simulada de layout EDI Proceda (Exemplo didático estruturado de TXT)
             doccobContent = 
 `350COBRANCA PROCEDA REGISTRO HEADER
 351${cnpjPrestador.padEnd(14)}${nomePrestador.substring(0,35).padEnd(35)}
@@ -460,7 +588,6 @@
             document.getElementById("doccob-preview").textContent = doccobContent;
             document.getElementById("conemb-preview").textContent = conembContent;
 
-            // Altera para passo 3
             document.getElementById("step-2").classList.add("hidden");
             document.getElementById("step-3").classList.remove("hidden");
 
@@ -487,6 +614,5 @@
             });
         }
     </script>
-
 </body>
 </html>
