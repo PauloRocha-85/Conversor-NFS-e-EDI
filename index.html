@@ -511,29 +511,55 @@
                 dataEmissao = today.toLocaleDateString("pt-BR");
                 dataVencimento = addDaysToDate(dataEmissao, 15);
             }
-            // 4. Valores Financeiros
+           // ===============================
+            // Valores Financeiros
+            // ===============================
             let valorServicos = "0,00";
             let valorLiquido = "0,00";
-            const valRegex = /(?:Valor Total dos Serviços|Valor Serviços (R$)|Valor Serviços|BC IBS|Base de Cálculo):?\s*R?\$?\s*([\d.,]+)/i;
-            const matchVal = cleanText.match(valRegex);
-            if(matchVal) {
-                valorServicos = matchVal[1];
-                valorLiquido = matchVal[1];
-            }
-
-            // ISS Retido
-            const matchIssRetido = cleanText.match(
-                /ISS\s+Retido[\r\n\s]*R?\$?\s*([\d.,]+)/i
+            
+            const moneyPattern = /([\d]{1,3}(?:\.[\d]{3})*,\d{2})/;
+            
+            // Valor Serviços (R$)
+            const servicosMatch = cleanText.match(
+                /Valor\s+Serviços\s*\(R\$\)[\s\S]{0,100}?([\d]{1,3}(?:\.[\d]{3})*,\d{2})/i
             );
             
-            // Alíquota
-            const matchAliquota = cleanText.match(
-                /Al[ií]quota(?:\s+do\s+ISS)?[\r\n\s]*([\d.,]+)\s*%?/i
+            if (servicosMatch) {
+                valorServicos = servicosMatch[1];
+            }
+            
+            // (=) Valor Líquido R$
+            const liquidoMatch = cleanText.match(
+                /\(=\)\s*Valor\s+Líquido\s*R\$[\s\S]{0,100}?([\d]{1,3}(?:\.[\d]{3})*,\d{2})/i
             );
+            
+            if (liquidoMatch) {
+                valorLiquido = liquidoMatch[1];
+            }
+
+            // ===============================
+            // ISS Retido
+            // ===============================
+            let issRetido = "";
+            let aliquotaIss = "";
+            
+            // Procura especificamente o campo ISS Retido
+            const issRetidoRegex =
+                /ISS\s+Retido\s*:?\s*R?\$?\s*([\d.,]+)/i;
+            
+            const matchIssRetido = cleanText.match(issRetidoRegex);
             
             if (matchIssRetido) {
                 issRetido = matchIssRetido[1];
             }
+            
+            // ===============================
+            // Alíquota do ISS (%)
+            // ===============================
+            const aliquotaRegex =
+                /Al[ií]quota(?:\s+do\s+ISS)?\s*:?\s*([\d.,]+)\s*%?/i;
+            
+            const matchAliquota = cleanText.match(aliquotaRegex);
             
             if (matchAliquota) {
                 aliquotaIss = matchAliquota[1];
