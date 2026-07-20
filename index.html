@@ -514,7 +514,7 @@
             // 4. Valores Financeiros
             let valorServicos = "0,00";
             let valorLiquido = "0,00";
-            const valRegex = /(?:Valor Total dos Serviços|Valor do Serviço|Valor dos Serviços|Valor da Nota|TOTAL):?\s*R?\$?\s*([\d.,]+)/i;
+            const valRegex = /(?:Valor Total dos Serviços|Valor Serviços (R$)|Valor Serviços|BC IBS|Base de Cálculo):?\s*R?\$?\s*([\d.,]+)/i;
             const matchVal = cleanText.match(valRegex);
             if(matchVal) {
                 valorServicos = matchVal[1];
