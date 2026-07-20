@@ -451,15 +451,35 @@
             const cleanText = text.replace(/\s+/g, ' ');
 
             // 1. Número da Nota
-            let numNota = "";
-            const numNotaRegex = /(?:Número da Nota|Nº da Nota|Número|Nº):?\s*(\d+)/i;
+           let numNota = "";
+
+            // Procura especificamente o campo "Número da Nota"
+            const numNotaRegex =
+                /(?:Número\s+da\s+Nota|Nº\s+da\s+Nota|Nota\s+Fiscal\s+Nº?|NFSe\s*Nº?)\s*:?\s*(\d+)/i;
+            
             const matchNum = cleanText.match(numNotaRegex);
-            if(matchNum) numNota = matchNum[1];
+            
+            if (matchNum) {
+                numNota = matchNum[1];
+            }
             
             // Fallback for number nota
-            if(!numNota) {
-                const genericNum = cleanText.match(/\b(\d{4,6})\b/);
-                if(genericNum) numNota = genericNum[1];
+            if (!numNota) {
+
+                const patterns = [
+                    /Nota\s*Fiscal\s*n[ºo]?\s*:?\s*(\d+)/i,
+                    /NFSe\s*n[ºo]?\s*:?\s*(\d+)/i,
+                    /NFS-e\s*n[ºo]?\s*:?\s*(\d+)/i,
+                    /Nota\s*n[ºo]?\s*:?\s*(\d+)/i
+                ];
+            
+                for (const pattern of patterns) {
+                    const match = cleanText.match(pattern);
+                    if (match) {
+                        numNota = match[1];
+                        break;
+                    }
+                }
             }
 
             // 2. Código de Verificação
@@ -501,32 +521,65 @@
                 valorLiquido = matchVal[1];
             }
 
-            // 5. ISS e Alíquota
-            let issRetido = "";
-            let aliquotaIss = "";
-            const issRegex = /(?:ISS Retido|Valor do ISS|ISS):?\s*R?\$?\s*([\d.,]+)/i;
-            const matchIss = cleanText.match(issRegex);
-            if(matchIss) issRetido = matchIss[1];
+            // ISS Retido
+            const matchIssRetido = cleanText.match(
+                /ISS\s+Retido[\r\n\s]*R?\$?\s*([\d.,]+)/i
+            );
+            
+            // Alíquota
+            const matchAliquota = cleanText.match(
+                /Al[ií]quota(?:\s+do\s+ISS)?[\r\n\s]*([\d.,]+)\s*%?/i
+            );
+            
+            if (matchIssRetido) {
+                issRetido = matchIssRetido[1];
+            }
+            
+            if (matchAliquota) {
+                aliquotaIss = matchAliquota[1];
+            }
 
-            // 6. CNPJs
+           // ===============================
+            // CNPJ Prestador
+            // ===============================
             let cnpjPrestador = "";
+            const prestadorMatch = cleanText.match(
+                /(?:CPF\/CNPJ|CNPJ)\s+do\s+Prestador[\s\S]{0,80}?(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/i
+            );
+            
+            if (prestadorMatch) {
+                cnpjPrestador = prestadorMatch[1];
+            }
+            
+            // ===============================
+            // CNPJ Tomador
+            // ===============================
             let cnpjTomador = "";
-            const cnpjRegex = /\b\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}\b/g;
-            const cnpjsFound = cleanText.match(cnpjRegex) || [];
-            if(cnpjsFound.length > 0) {
-                cnpjPrestador = cnpjsFound[0];
-                cnpjTomador = cnpjsFound.length > 1 ? cnpjsFound[1] : cnpjsFound[0];
+            const tomadorMatch = cleanText.match(
+                /(?:CPF\/CNPJ|CNPJ)\s+do\s+Tomador[\s\S]{0,80}?(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/i
+            );
+            
+            if (tomadorMatch) {
+                cnpjTomador = tomadorMatch[1];
             }
 
             // 7. Razão Social (Prestador / Tomador)
             let nomePrestador = "B & C LOGISTICA CARGAS E DESCARGAS LTDA";
             let nomeTomador = "M DIAS BRANCO S.A IND E COM DE ALIM";
             
-            // 8. Número de Remessa
-            let numRemessa = "2607783";
-            const remessaRegex = /(?:Remessa|REM):?\s*(\d{5,8})/i;
+           // ===============================
+            // Número da Remessa
+            // ===============================
+            let numRemessa = "";
+            
+            const remessaRegex =
+                /(?:Número\s+da\s+Remessa|Nº\s+da\s+Remessa|Remessa)[\s\S]{0,50}?(\d{5,12})/i;
+            
             const matchRem = cleanText.match(remessaRegex);
-            if(matchRem) numRemessa = matchRem[1];
+            
+            if (matchRem) {
+                numRemessa = matchRem[1];
+            }
 
             // Populate form fields
             document.getElementById("numNota").value = numNota || "";
